@@ -1,0 +1,474 @@
+{
+  "inputFile": "llmreportinput.txt",
+  "inputFiles": {
+    "TD": "td-input.txt",
+    "Toyota": "toyota-input.txt",
+    "SumHealth": "sumhealth-input.txt",
+    "TDI": "tdi-input.txt",
+    "RBCInsurance": "rbcinsurance-input.txt",
+    "SunLife": "sunlife-input.txt",
+    "ManuLife": "manulife-input.txt",
+    "Intact": "intact-input.txt",
+    "TurboTax": "turbotax-input.txt",
+    "Ufile": "ufile-input.txt",
+    "HRBlock": "hrblock-input.txt",
+    "CRA": "cra-input.txt",
+    "WealthSimple": "wealthsimple-input.txt",
+    "Xuno": "xuno-input.txt",
+    "Western Union": "western union-input.txt",
+    "Remitly": "remitly-input.txt",
+    "MoneyGram": "moneygram-input.txt",
+    "Wise": "wise-input.txt",
+    "Bell": "bell-input.txt",
+    "Fido": "fido-input.txt",
+    "Telus": "telus-input.txt",
+    "Freedom": "freedom-input.txt",
+    "Rogers": "rogers-input.txt",
+    "Pfizer": "pfizer-input.txt",
+    "Prevnar": "prevnar-input.txt",
+    "Capvaxivez": "capvaxivez-input.txt",
+    "Vaxneuvance": "vaxneuvance-input.txt",
+    "Pneumovax": "pneumovax-input.txt",
+    "AMB Enterprises": "amb enterprises-input.txt",
+    "hp": "hp-input.txt",
+    "dell": "dell-input.txt",
+    "samsung": "samsung-input.txt",
+    "lenovo": "lenovo-input.txt",
+    "Nike": "nike-input.txt",
+    "Adidas": "adidas-input.txt",
+    "Puma": "puma-input.txt",
+    "Sketechers": "sketechers-input.txt",
+    "NewBalance": "newbalance-input.txt",
+    "Lexus": "lexus-input.txt",
+    "Mercedes": "mercedes-input.txt",
+    "BMW": "bmw-input.txt",
+    "Audi": "audi-input.txt",
+    "Volvo": "volvo-input.txt",
+    "DailyBreadFoodBank": "daily bread food bank-input.txt",
+    "SecondHarvest": "second harvest-input.txt",
+    "ParkdaleFoodBank": "parkdale food bank-input.txt",
+    "NorthYorkHarvest": "north york harvest-input.txt",
+    "FortYorkFoodBank": "fort york food bank-input.txt",
+    "Advil": "advil-input.txt",
+    "Tylenol": "tylenol-input.txt",
+    "Motrin": "motrin-input.txt",
+    "Aleve": "aleve-input.txt",
+    "Aspirin": "aspirin-input.txt",
+    "ZenniOptical": "zennioptical-input.txt",
+    "Clearly": "clearly-input.txt",
+    "Zeelool": "zeelool-input.txt",
+    "WarbyParker": "warbyparker-input.txt",
+    "EyeBuyDirect": "eyebuydirect-input.txt",
+    "Tim Hortons": "timhortons-input.txt",
+    "Starbucks": "starbucks-input.txt",
+    "Burger King": "burger king-input.txt",
+    "McDonalds": "mcdonalds-input.txt",
+    "Second Cup": "second cup-input.txt"
+  },
+  "brands": [
+    "TD",
+    "RBC",
+    "CIBC",
+    "Scotiabank",
+    "BMO",
+    "Toyota",
+    "KIA",
+    "Hyundai",
+    "Honda",
+    "Ford",
+    "SumHealth",
+    "FairHealthConsumer",
+    "HealthcareBluebook",
+    "SerifHealth",
+    "Turquoise",
+    "TDI",
+    "RBCInsurance",
+    "SunLife",
+    "ManuLife",
+    "Intact",
+    "TurboTax",
+    "Ufile",
+    "HRBlock",
+    "CRA",
+    "WealthSimple",
+    "Xuno",
+    "Western Union",
+    "Remitly",
+    "MoneyGram",
+    "Wise",
+    "Bell",
+    "Fido",
+    "Telus",
+    "Freedom",
+    "Rogers",
+    "Pfizer",
+    "Prevnar",
+    "Capvaxivez",
+    "Vaxneuvance",
+    "Pneumovax",
+    "AMB Enterprises",
+    "hp",
+    "dell",
+    "samsung",
+    "lenovo",
+    "Nike",
+    "Adidas",
+    "Puma",
+    "Sketechers",
+    "NewBalance",
+    "Lexus",
+    "Mercedes",
+    "BMW",
+    "Audi",
+    "Volvo",
+    "DailyBreadFoodBank",
+    "SecondHarvest",
+    "ParkdaleFoodBank",
+    "NorthYorkHarvest",
+    "FortYorkFoodBank",
+    "Advil",
+    "Tylenol",
+    "Motrin",
+    "Aleve",
+    "Aspirin",
+    "ZenniOptical",
+    "Clearly",
+    "Zeelool",
+    "WarbyParker",
+    "EyeBuyDirect",
+    "Tim Hortons",
+    "Starbucks",
+    "Burger King",
+    "McDonalds",
+    "Second Cup"
+  ],
+  "domains": {
+    "TD": "td.com",
+    "RBC": "rbcroyalbank.com",
+    "CIBC": "cibc.com",
+    "Scotiabank": "scotiabank.com",
+    "BMO": "bmo.com",
+    "Toyota": "toyota",
+    "KIA": "kia.can",
+    "Hyundai": "Hyundai.ca",
+    "Honda": "Honda.ca",
+    "Ford": "Ford.com",
+    "SumHealth": "sumhealth.com",
+    "FairHealthConsumer": "fairhealthconsumer.com",
+    "HealthcareBluebook": "healthcareblubook.com",
+    "SerifHealth": "serifhealth.com",
+    "Turquoise": "Turquoise.com",
+    "TDI": "https://www.tdinsurance.com",
+    "RBCInsurance": "rbcinsurance.com",
+    "SunLife": "sunlife.ca",
+    "ManuLife": "manulife.ca",
+    "Intact": "intact.ca",
+    "TurboTax": "https://turbotax.intuit.ca/",
+    "Ufile": "ufile.ca",
+    "HRBlock": "hrblock.ca",
+    "CRA": "canada.ca",
+    "WealthSimple": "wealthsimple.com",
+    "Xuno": "https://nepal.xuno.co",
+    "Western Union": "westernunion.com",
+    "Remitly": "remitly.com",
+    "MoneyGram": "moneygram.com",
+    "Wise": "wise.com",
+    "Bell": "https://www.bell.ca",
+    "Fido": "fido.ca",
+    "Telus": "telus.com",
+    "Freedom": "freedommobile.ca",
+    "Rogers": "rogers.com",
+    "Pfizer": "https://www.pfizer.ca/",
+    "Prevnar": "prevnar.ca",
+    "Capvaxivez": "capvaxive.com",
+    "Vaxneuvance": "merck.ca",
+    "Pneumovax": "merck.ca/en/",
+    "AMB Enterprises": "https://www.amde.ca",
+    "hp": "hp.ca",
+    "dell": "dell.com",
+    "samsung": "samsung.ca",
+    "lenovo": "lenovo.com",
+    "Nike": "https://www.nike.com/ca/",
+    "Adidas": "adidas.ca",
+    "Puma": "puma.com",
+    "Sketechers": "skechers.ca",
+    "NewBalance": "newbalance.ca",
+    "Lexus": "https://www.lexus.ca",
+    "Mercedes": "mercedes-benz.ca",
+    "BMW": "bmw.ca",
+    "Audi": "audi.ca",
+    "Volvo": "volvocars.com",
+    "DailyBreadFoodBank": "https://www.dailybread.ca",
+    "SecondHarvest": "secondharvest.ca",
+    "ParkdaleFoodBank": "pcfb.ca",
+    "NorthYorkHarvest": "northyorkharvest.com",
+    "FortYorkFoodBank": "fyfb.com",
+    "Advil": "https://www.advil.ca/",
+    "Tylenol": "tylenol.ca",
+    "Motrin": "motrin.ca",
+    "Aleve": "aleve.ca",
+    "Aspirin": "aspirin.ca",
+    "ZenniOptical": "https://ca.zennioptical.com",
+    "Clearly": "clearly.ca",
+    "Zeelool": "zeelool.com",
+    "WarbyParker": "warbyparker.com",
+    "EyeBuyDirect": "eyebuydirect.ca",
+    "Tim Hortons": "https://www.timhortons.ca/",
+    "Starbucks": "starbucks.ca",
+    "Burger King": "bk.com",
+    "McDonalds": "mcdonalds.com",
+    "Second Cup": "secondcup.com"
+  },
+  "competitors": {
+    "TD": [
+      "RBC",
+      "CIBC",
+      "BMO",
+      "Scotiabank"
+    ],
+    "Toyota": [
+      "KIA",
+      "Hyundai",
+      "Honda",
+      "Ford"
+    ],
+    "SumHealth": [
+      "FairHealthConsumer",
+      "HealthcareBluebook",
+      "SerifHealth",
+      "Turquoise"
+    ],
+    "TDI": [
+      "RBCInsurance",
+      "SunLife",
+      "ManuLife",
+      "Intact"
+    ],
+    "RBCInsurance": [
+      "TDI"
+    ],
+    "SunLife": [
+      "TDI"
+    ],
+    "ManuLife": [
+      "TDI"
+    ],
+    "Intact": [
+      "TDI"
+    ],
+    "TurboTax": [
+      "Ufile",
+      "HRBlock",
+      "CRA",
+      "WealthSimple"
+    ],
+    "Ufile": [
+      "TurboTax"
+    ],
+    "HRBlock": [
+      "TurboTax"
+    ],
+    "CRA": [
+      "TurboTax"
+    ],
+    "WealthSimple": [
+      "TurboTax"
+    ],
+    "Xuno": [
+      "Western Union",
+      "Remitly",
+      "MoneyGram",
+      "Wise"
+    ],
+    "Western Union": [
+      "Xuno"
+    ],
+    "Remitly": [
+      "Xuno"
+    ],
+    "MoneyGram": [
+      "Xuno"
+    ],
+    "Wise": [
+      "Xuno"
+    ],
+    "Bell": [
+      "Fido",
+      "Telus",
+      "Freedom",
+      "Rogers"
+    ],
+    "Fido": [
+      "Bell"
+    ],
+    "Telus": [
+      "Bell"
+    ],
+    "Freedom": [
+      "Bell"
+    ],
+    "Rogers": [
+      "Bell"
+    ],
+    "Pfizer": [
+      "Prevnar",
+      "Capvaxivez",
+      "Vaxneuvance",
+      "Pneumovax"
+    ],
+    "Prevnar": [
+      "Pfizer"
+    ],
+    "Capvaxivez": [
+      "Pfizer"
+    ],
+    "Vaxneuvance": [
+      "Pfizer"
+    ],
+    "Pneumovax": [
+      "Pfizer"
+    ],
+    "AMB Enterprises": [
+      "hp",
+      "dell",
+      "samsung",
+      "lenovo"
+    ],
+    "hp": [
+      "AMB Enterprises"
+    ],
+    "dell": [
+      "AMB Enterprises"
+    ],
+    "samsung": [
+      "AMB Enterprises"
+    ],
+    "lenovo": [
+      "AMB Enterprises"
+    ],
+    "Nike": [
+      "Adidas",
+      "Puma",
+      "Sketechers",
+      "NewBalance"
+    ],
+    "Adidas": [
+      "Nike"
+    ],
+    "Puma": [
+      "Nike"
+    ],
+    "Sketechers": [
+      "Nike"
+    ],
+    "NewBalance": [
+      "Nike"
+    ],
+    "Lexus": [
+      "Mercedes",
+      "BMW",
+      "Audi",
+      "Volvo"
+    ],
+    "Mercedes": [
+      "Lexus"
+    ],
+    "BMW": [
+      "Lexus"
+    ],
+    "Audi": [
+      "Lexus"
+    ],
+    "Volvo": [
+      "Lexus"
+    ],
+    "DailyBreadFoodBank": [
+      "SecondHarvest",
+      "ParkdaleFoodBank",
+      "NorthYorkHarvest",
+      "FortYorkFoodBank"
+    ],
+    "SecondHarvest": [
+      "DailyBreadFoodBank"
+    ],
+    "ParkdaleFoodBank": [
+      "DailyBreadFoodBank"
+    ],
+    "NorthYorkHarvest": [
+      "DailyBreadFoodBank"
+    ],
+    "FortYorkFoodBank": [
+      "DailyBreadFoodBank"
+    ],
+    "Advil": [
+      "Tylenol",
+      "Motrin",
+      "Aleve",
+      "Aspirin"
+    ],
+    "Tylenol": [
+      "Advil"
+    ],
+    "Motrin": [
+      "Advil"
+    ],
+    "Aleve": [
+      "Advil"
+    ],
+    "Aspirin": [
+      "Advil"
+    ],
+    "ZenniOptical": [
+      "Clearly",
+      "Zeelool",
+      "WarbyParker",
+      "EyeBuyDirect"
+    ],
+    "Clearly": [
+      "ZenniOptical"
+    ],
+    "Zeelool": [
+      "ZenniOptical"
+    ],
+    "WarbyParker": [
+      "ZenniOptical"
+    ],
+    "EyeBuyDirect": [
+      "ZenniOptical"
+    ],
+    "Tim Hortons": [
+      "Starbucks",
+      "Burger King",
+      "McDonalds",
+      "Second Cup"
+    ],
+    "Starbucks": [
+      "Tim Hortons"
+    ],
+    "Burger King": [
+      "Tim Hortons"
+    ],
+    "McDonalds": [
+      "Tim Hortons"
+    ],
+    "Second Cup": [
+      "Tim Hortons"
+    ]
+  },
+  "ctr": {
+    "1": 0.3476,
+    "2": 0.1508,
+    "3": 0.0925,
+    "4": 0.0654,
+    "5": 0.05,
+    "10": 0.0217
+  },
+  "brandDisplayNames": {
+    "TimHortons": "Tim Hortons",
+    "Starbucks": "Starbucks",
+    "BurgerKing": "Burger King",
+    "Mcdonalds": "McDonalds",
+    "SecondCup": "Second Cup"
+  },
+  "location": "toronto"
+}

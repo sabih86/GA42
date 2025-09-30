@@ -1,0 +1,40 @@
+<!-- views/select.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select 4 Questions per Keyword</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    fieldset { 
+      margin-bottom: 2rem; 
+      padding: 1rem; 
+      border: 1px solid #ccc; 
+    }
+    legend { font-weight: bold; }
+    label { display: block; margin-bottom: 0.5rem; }
+    button { padding: .5rem 1rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Select 4 Questions per Keyword</h1>
+  <form action="/select?runId=<%= runId %>" method="POST">
+    <% data.tasks.forEach(task => { %>
+      <fieldset>
+        <legend><%= task.keyword %> (MSV: <%= task.msv %>)</legend>
+        <% task.prompts.forEach((prompt, idx) => { %>
+          <label>
+            <input 
+              type="checkbox" 
+              name="selected[<%= task.keyword %>]" 
+              value="<%= prompt %>" 
+            />
+            Q<%= idx + 1 %>: <%= prompt %>
+          </label>
+        <% }) %>
+      </fieldset>
+    <% }) %>
+    <button type="submit">Create Input File</button>
+  </form>
+</body>
+</html>

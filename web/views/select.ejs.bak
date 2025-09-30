@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select Questions</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: .5rem; }
+    th { background: #f5f5f5; }
+    button { padding: .5rem 1rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Select 4 Questions per Keyword</h1>
+  <form action="/select?runId=<%= runId %>" method="POST">
+    <table>
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th>MSV</th>
+          <% data.tasks[0].prompts.forEach((_,i) => { %>
+            <th>Q<%= i+1 %></th>
+          <% }) %>
+        </tr>
+      </thead>
+      <tbody>
+      <% data.tasks.forEach(task => { %>
+        <tr>
+          <td><%= task.keyword %></td>
+          <td><%= task.msv %></td>
+          <% task.prompts.forEach(prompt => { %>
+            <td>
+              <input type="checkbox" name="selected[<%= task.keyword %>]" value="<%= prompt %>" />
+            </td>
+          <% }) %>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+    <button type="submit">Create Input File</button>
+  </form>
+</body>
+</html>

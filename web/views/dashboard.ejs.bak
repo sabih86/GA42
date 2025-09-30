@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LLMReport Dashboard</title>
+  <script src="/static/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    .flex { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .tabs { border-bottom: 2px solid #ddd; }
+    .tabs button { background: none; border: none; padding: 0.5rem 1rem; cursor: pointer; }
+    .tabs button.active { border-bottom: 3px solid #007bff; color: #007bff; }
+    .tab-content { display: none; margin-top: 1rem; }
+    .tab-content.active { display: block; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    .kpi { font-size: 1.2rem; margin-right: 2rem; }
+    .kpi strong { margin: 0 0.3rem; }
+  </style>
+</head>
+<body>
+  <h1>LLMReport Dashboard</h1>
+
+  <div class="flex">
+    <label>Provider:
+      <select id="providerSelect">
+        <% providers.forEach(p => { %>
+          <option value="<%= p %>" <%= p===selected.provider?'selected':'' %>>
+            <%= p.charAt(0).toUpperCase()+p.slice(1) %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+    <label>Date:
+      <select id="dateSelect">
+        <% dates.forEach(d => { %>
+          <option value="<%= d %>" <%= d===selected.date?'selected':'' %>>
+            <%= new Date(d).toLocaleString('en-US') %>
+          </option>
+        <% }) %>
+      </select>
+    </label>
+  </div>
+
+  <h2>Summary</h2>
+  <table>
+    <tr><th>Domain</th><td><%= summary.domain %></td></tr>
+    <tr><th>Competitors Tracked</th><td><%= summary.competitors.join(', ') %></td></tr>
+	<tr><th>Location</th><td><%= location %></td></tr>
+    <tr><th>Platform</th><td><%= summary.platform %></td></tr>
+    <tr><th>Last Executed</th><td><%= summary.lastExecuted %></td></tr>
+    <tr><th>Total Executions</th><td><%= summary.totalExecutions %></td></tr>
+    <tr><th>Total Keywords</th><td><%= summary.totalKeywords %></td></tr>
+    <tr><th>Total Questions / Prompts</th><td><%= summary.totalQuestions %></td></tr>
+    <tr><th>Total MSV of Keywords</th><td><%= summary.totalMSV %></td></tr>
+  </table>
+
+  <div class="flex">
+    <div class="kpi">📣 <strong id="kpiMentions">–</strong> Mentions</div>
+    <div class="kpi">📊 <strong id="kpiRank">–</strong> Avg. Rank</div>
+    <div class="kpi">📈 <strong id="kpiSov">–</strong> Avg. SOV</div>
+    <div class="kpi">📑 <strong id="kpiCites">–</strong> Citations</div>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="keywords" class="active">Keywords & Prompts</button>
+    <button data-tab="mentions">Brand Mentions</button>
+    <button data-tab="rank">Average Rank</button>
+    <button data-tab="sov">Average SOV</button>
+    <button data-tab="citations">Citations</button>
+	 <button data-tab="sentiment">Average Sentiment</button>
+    <button data-tab="opportunities">Opportunities</button>
+	<button class="tab-button" data-tab="opportunities-optimizer">Opportunities 2 (Optimizer)</button>
+  </div>
+
+  <!-- Keywords & Prompts -->
+  <div id="keywords" class="tab-content active">
+    <div id="kwList"></div>
+  </div>
+
+  <!-- Brand Mentions -->
+  <div id="mentions" class="tab-content">
+    <canvas id="chartMentions" width="600" height="300"></canvas>
+    <div id="detailMentions"></div>
+  </div>
+
+  <!-- Average Rank -->
+  <div id="rank" class="tab-content">
+    <canvas id="chartRank" width="600" height="300"></canvas>
+    <div id="detailRank"></div>
+  </div>
+
+  <!-- Average SOV -->
+  <div id="sov" class="tab-content">
+    <canvas id="chartSov" width="600" height="300"></canvas>
+    <div id="detailSov"></div>
+  </div>
+
+
+  <!-- Average Sentiment -->
+  <div id="sentiment" class="tab-content">
+    <canvas id="chartSentiment" width="600" height="300"></canvas>
+    <div id="detailSentiment"></div>
+  </div>
+
+  <!-- Citations -->
+  <div id="citations" class="tab-content">
+    <canvas id="chartCitations" width="600" height="300"></canvas>
+    <div id="detailCitations"></div>
+  </div>
+
+  <!-- Opportunities -->
+  <div id="opportunities" class="tab-content">
+    <h3>Ranking Opportunities</h3>
+    <table id="oppRankTable"><thead><tr>
+      <th>Keyword</th><th>Question</th><th>Top Competitor</th>
+    </tr></thead><tbody></tbody></table>
+    <h3>Mention Opportunities</h3>
+    <table id="oppMentionTable"><thead><tr>
+      <th>Keyword</th><th>Question</th><th>Competitors Mentioned</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+
+<!-- Opportunities 2 (Optimization vs Net New) -->
+<div id="opportunities-optimizer" class="tab-content">
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <label>Type:
+      <select id="opp2Type">
+        <option value="all">All</option>
+        <option value="ranking">Ranking</option>
+        <option value="mention">Mention</option>
+      </select>
+    </label>
+    <button id="opp2Load">Load</button>
+    <span id="opp2Meta" style="margin-left:12px;color:#666;"></span>
+  </div>
+
+  <div style="overflow:auto; margin-top:8px;">
+    <table id="opp2Table" class="table">
+      <thead>
+        <tr>
+          <th>Prompt</th>
+          <th>Opportunity</th>
+          <th>Update Type</th>
+          <th>Suggested Existing URL</th>
+          <th>Example Competitor URL</th>
+          <th>Keyword</th>
+          <th>MSV</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+
+
+
+
+  <script>
+    // register plugin
+    Chart.register(ChartDataLabels);
+
+     const BRANDS   = <%- JSON.stringify(brands) %>;
+     const provider = '<%= selected.provider %>';
+     const date     = '<%= selected.date %>';
+     const brand    = '<%= selected.brand %>';
+     const MY_BRAND = brand;
+
+    // tab switching
+    document.querySelectorAll('.tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tabs button, .tab-content')
+                .forEach(el=>el.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // provider/date change
+    // now only brand drives the URL
+     document.getElementById('providerSelect').onchange = e =>
+       location.search = `?brand=${encodeURIComponent(brand)}&provider=${encodeURIComponent(e.target.value)}&date=${encodeURIComponent(date)}`;
+     document.getElementById('dateSelect').onchange = e =>
+       location.search = `?brand=${encodeURIComponent(brand)}&provider=${encodeURIComponent(provider)}&date=${encodeURIComponent(e.target.value)}`;
+
+    // Keywords & Prompts
+    fetch(`/api/metrics/${provider}?date=${encodeURIComponent(date)}&brand=${encodeURIComponent(brand)}`)
+      .then(r=>r.json()).then(rows=>{
+        const kwByTerm = {};
+        rows.forEach(r => {
+          if (r.question==='MSV') return;
+          if (!kwByTerm[r.keyword]) kwByTerm[r.keyword]=new Set();
+          kwByTerm[r.keyword].add(r.question);
+        });
+        const el=document.getElementById('kwList');
+        Object.entries(kwByTerm).forEach(([kw,qs])=>{
+          const d=document.createElement('details');
+          d.innerHTML = `<summary>${kw}</summary>`
+                      + Array.from(qs).map(q=>`<div style="padding-left:1rem">– ${q}</div>`).join('');
+          el.appendChild(d);
+        });
+      });
+
+    // Generic drawer for bar charts
+    function drawBar({endpoint, chartId, detailDiv, label, reverse=false, yMin=null, yMax=null}) {
+      fetch(`${endpoint}/${provider}?date=${encodeURIComponent(date)}&brand=${encodeURIComponent(brand)}`)
+        .then(r=>r.json()).then(data=>{
+          // summary KPI
+          const myVal = data.find(r=>r.brand===MY_BRAND)?.value || 0;
+          const kpiMap = {
+			'/api/total-mentions': 'kpiMentions',
+			'/api/average-rank':   'kpiRank',
+			'/api/average-sov':    'kpiSov',
+			'/api/citations-by-brand':'kpiCites'
+		  };
+		  const kpiId = kpiMap[endpoint];
+		  if (kpiId) {
+			document.getElementById(kpiId).textContent = label==='Avg. SOV'
+				? myVal.toFixed(1)+'%' : myVal;
+		  }
+
+          // chart
+          const ctx = document.getElementById(chartId).getContext('2d');
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: BRANDS,
+              datasets: [{
+                label,
+                data: BRANDS.map(b=> {
+                  const v = data.find(r=>r.brand===b)?.value || 0;
+                  return label==='Avg. SOV' ? parseFloat(v) : v;
+                }),
+                backgroundColor: BRANDS.map(b=> b===MY_BRAND ? 'red' : '#a3c9f1')
+              }]
+            },
+            options: {
+              responsive:false,
+              plugins:{
+                legend:{ display:true },
+                datalabels:{ anchor:'end', align:'top', formatter: v=>label==='Avg. SOV' ? v+'%' : v }
+              },
+              scales:{
+				y:{
+					beginAtZero: (yMin===null ? true : yMin>=0),
+					reverse,
+					suggestedMin: (yMin===null ? undefined : yMin),
+					suggestedMax: (yMax===null ? undefined : yMax)
+				}
+			  }
+            }
+          });
+
+          // detail table
+          const tbl=document.createElement('table');
+          tbl.innerHTML = `<thead>
+            <tr><th>Brand</th><th>${label}</th></tr>
+          </thead>`;
+          const tb=document.createElement('tbody');
+          data.forEach(r=>{
+            const tr=document.createElement('tr');
+            tr.innerHTML = `<td>${r.brand}</td><td>${
+              label==='Avg. SOV'
+                ? parseFloat(r.value).toFixed(1)+'%'
+                : r.value.toFixed ? r.value.toFixed(1) : r.value
+            }</td>`;
+            tb.appendChild(tr);
+          });
+          tbl.appendChild(tb);
+          document.getElementById(detailDiv).innerHTML='';
+          document.getElementById(detailDiv).appendChild(tbl);
+        });
+    }
+
+    drawBar({ endpoint:'/api/total-mentions', chartId:'chartMentions', detailDiv:'detailMentions', label:'Mentions' });
+    drawBar({ endpoint:'/api/average-rank',   chartId:'chartRank',    detailDiv:'detailRank',    label:'Avg. Rank',   reverse:true });
+    drawBar({ endpoint:'/api/average-sov',    chartId:'chartSov',     detailDiv:'detailSov',     label:'Avg. SOV' });
+	drawBar({ endpoint:'/api/average-sentiment', chartId:'chartSentiment', detailDiv:'detailSentiment', label:'Avg. Sentiment', yMin:-100, yMax:100 });
+    drawBar({ endpoint:'/api/citations-by-brand', chartId:'chartCitations', detailDiv:'detailCitations', label:'Citations' });
+
+    // Opportunities
+    fetch(`/api/questions-lower/${provider}?date=${encodeURIComponent(date)}&brand=${encodeURIComponent(brand)}`)
+      .then(r=>r.json()).then(arr=>{
+        const tbody=document.querySelector('#oppRankTable tbody');
+        arr.forEach(o=>{
+          tbody.innerHTML += `<tr>
+            <td>${o.keyword}</td>
+            <td>${o.question}</td>
+            <td>${o.topCompetitor}</td>
+          </tr>`;
+        });
+      });
+
+    fetch(`/api/questions-zero-mentions/${provider}?date=${encodeURIComponent(date)}&brand=${encodeURIComponent(brand)}`)
+      .then(r=>r.json()).then(arr=>{
+        const tbody=document.querySelector('#oppMentionTable tbody');
+        arr.forEach(o=>{
+          tbody.innerHTML += `<tr>
+            <td>${o.keyword}</td>
+            <td>${o.question}</td>
+            <td>${o.competitors}</td>
+          </tr>`;
+        });
+      });
+	  
+/* --- Opportunities 2 (uses /api/opportunities) --- */
+(function(){
+  // These vars already exist at the top of dashboard.ejs in your setup:
+  // const provider = '<%= selected.provider %>';
+  // const brand    = '<%= selected.brand %>';
+  // const date     = '<%= selected.date %>'; // we won't use date; API will pick latest
+
+  const typeEl = document.getElementById('opp2Type');
+  const metaEl = document.getElementById('opp2Meta');
+  const tbody  = document.querySelector('#opp2Table tbody');
+  const loadBtn = document.getElementById('opp2Load');
+
+  function escapeHtml(s=''){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function loadOpps2(){
+    const type = typeEl.value || 'all';
+    metaEl.textContent = 'Loading…';
+    tbody.innerHTML = '';
+
+    const url = `/api/opportunities?brand=${encodeURIComponent(brand)}&provider=${encodeURIComponent(provider)}&runDate=latest&type=${encodeURIComponent(type)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.rows) { metaEl.textContent = 'No data'; return; }
+    metaEl.textContent = data.runDate ? `Run: ${data.runDate}` : '';
+
+    for (const r of data.rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(r.Prompt)}</td>
+        <td>${escapeHtml(r.OpportunityType)}</td>
+        <td>${escapeHtml(r.ContentUpdateType)}</td>
+        <td>${r.SuggestedExistingUrl ? `<a href="${r.SuggestedExistingUrl}" target="_blank" rel="noopener">Open</a>` : ''}</td>
+        <td>${r.ExampleCompetitorUrl ? `<a href="${r.ExampleCompetitorUrl}" target="_blank" rel="noopener">Open</a>` : ''}</td>
+        <td>${escapeHtml(r.Keyword||'')}</td>
+        <td>${r.MSV ?? ''}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  loadBtn.addEventListener('click', loadOpps2);
+
+  // Auto-load the first time the new tab is opened
+  const newTabBtn = document.querySelector('.tab-button[data-tab="opportunities-optimizer"]');
+  if (newTabBtn) {
+    let loadedOnce = false;
+    newTabBtn.addEventListener('click', () => {
+      if (!loadedOnce) { loadedOnce = true; loadOpps2(); }
+    });
+  }
+})();
+
+	  
+	  
+  </script>
+</body>
+</html>

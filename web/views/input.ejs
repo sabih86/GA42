@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LLMReport Input</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    label { display: block; margin-bottom: 1rem; }
+    input, textarea { width: 100%; padding: .5rem; margin-top: .5rem; }
+    button { padding: .5rem 1rem; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>LLMReport Input</h1>
+  <form action="/input" method="POST">
+    <label>Keywords (comma-separated):
+      <textarea name="keywords" rows="3" required></textarea>
+    </label>
+    <label>Brand Name:
+      <input type="text" name="brand" required />
+    </label>
+    <label>Brand URL:
+      <input type="url" name="brandUrl" required />
+    </label>
+	<label>Location (e.g., Canada or Toronto) — required:
+      <input type="text" name="location" required />
+    </label>
+    <label>Competitor Names (comma-separated, 4):
+      <input type="text" name="competitors" required />
+    </label>
+    <label>Competitor URLs (comma-separated, 4):
+      <input type="text" name="competitorUrls" required />
+    </label>
+    <button type="submit">Next</button>
+  </form>
+</body>
+</html>

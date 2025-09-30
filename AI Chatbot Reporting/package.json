@@ -1,0 +1,32 @@
+{
+  "name": "ga4",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "openai-test": "node openaitest.js",
+    "mine:opp": "node opportunity_miner.js --brand \"$brand\" --provider ${provider:-chatgpt}",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-ai/generativelanguage": "^3.2.0",
+    "axios": "^1.9.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "openai": "^4.104.0",
+    "perplexity-sdk": "^1.0.4",
+    "puppeteer": "^24.7.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "readline": "^1.3.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "xlsx": "^0.18.5"
+  },
+  "description": ""
+}

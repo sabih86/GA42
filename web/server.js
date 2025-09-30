@@ -1,0 +1,652 @@
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import OpenAI  from 'openai';
+import dotenv from 'dotenv';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
+// resolve the Reporting folder (…\GA4\AI Chatbot Reporting)
+const DB_DIR = path.resolve(__dirname, '../AI Chatbot Reporting');
+
+// main & opp DBs live inside that folder's /output
+const DB_PATH = path.join(DB_DIR, 'output', 'llmreport.db');   // already used by initDb()
+
+
+
+// load the .env that lives next door in AI Chatbot Reporting
+ dotenv.config({
+   path: path.resolve(__dirname, '../AI Chatbot Reporting/.env')
+ });
+
+// ── load our shared JSON config ────────────────────────────────────
+const CONFIG = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, '../AI Chatbot Reporting/config.json'),
+    'utf-8'
+  )
+);
+
+// --- brand key helpers (allow spaces & punctuation in display names) ---
+const slugLower = (s='') =>
+  s.normalize('NFKD')
+   .replace(/[\u0300-\u036f]/g,'')
+   .replace(/[^A-Za-z0-9]+/g, '')
+   .toLowerCase();
+
+const pascalKey = (s='') =>
+  s.split(/[^A-Za-z0-9]+/).filter(Boolean)
+   .map(w=>w[0].toUpperCase()+w.slice(1).toLowerCase()).join('');
+
+// Find existing config key whose "slug" matches; otherwise create a new PascalCase key
+const resolveBrandKey = (name, cfg=CONFIG) => {
+  const target = slugLower(String(name||''));
+  const keys = new Set([
+    ...Object.keys(cfg.inputFiles || {}),
+    ...Object.keys(cfg.domains || {}),
+    ...Object.keys(cfg.competitors || {}),
+    ...(cfg.brands || [])
+  ]);
+  for (const k of keys) {
+    if (slugLower(k) === target) return k; // match existing key
+  }
+  const k = pascalKey(String(name||''));
+  return k || String(name||'').replace(/\s+/g,'');
+};
+
+// Both variants for DB filtering (backward-compat with older runs)
+const brandVariants = (name) => {
+  const disp = String(name||'');                           // "Tim Hortons"
+  const key  = resolveBrandKey(disp);                      // "TimHortons"
+  const compact = disp.replace(/[^A-Za-z0-9]+/g,'');       // "TimHortons"
+  return { disp, key, compact };
+};
+
+
+//dotenv.config();
+
+// ── initialize OpenAI client & askLLM helper ─────────────────────────
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/**
+ * askLLM(provider, systemPrompt, userContent)
+ * Currently only supports 'chatgpt'
+ */
+async function askLLM(provider, systemPrompt, userContent) {
+  if (provider === 'chatgpt') {
+    const resp = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userContent }
+      ]
+    });
+    return resp.choices[0].message.content;
+  }
+  throw new Error(`Unsupported provider: ${provider}`);
+}
+
+
+//const CONFIG = JSON.parse(
+//fs.readFileSync(path.join(__dirname, '../AI ChatBot Reporting/config.json'), 'utf-8')
+//);
+
+const MODEL     = process.env.LLM_MODEL || 'gpt-4o-mini';
+const PROVIDERS = ['chatgpt', 'gemini','perplexity'];
+const PERPLEXITY_MODEL   = process.env.PERPLEXITY_MODEL || 'pplx-7b-chat';
+const BRANDS    = CONFIG.brands;
+
+// Adjust to your LLM Reporting folder
+//const DB_DIR = path.resolve(__dirname, '../AI Chatbot Reporting');
+//const DB_PATH     = path.join(DB_DIR, 'output', 'llmreport.db');
+const SCHEMA_PATH = path.join(DB_DIR, 'schema.sql');
+const OPP_DB_PATH = path.join(DB_DIR, 'output', 'opportunities.db');
+
+async function getOppDb() {
+  return open({ filename: OPP_DB_PATH, driver: sqlite3.Database });
+}
+
+async function initDb() {
+  // Open DB and apply schema
+  const db = await open({ filename: DB_PATH, driver: sqlite3.Database });
+  if (!fs.existsSync(SCHEMA_PATH)) {
+    throw new Error(`Missing schema.sql at ${SCHEMA_PATH}`);
+  }
+  const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
+  await db.exec(schema);
+  return db;
+}
+
+const app = express();
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use('/static', express.static(path.join(__dirname, 'public')));
+
+// parse form bodies
+app.use(express.urlencoded({ extended: true }));
+
+// in‑memory store for each run’s data
+const inputStore = {};
+
+app.get('/', async (req, res) => {
+  const db = await initDb();
+  
+// ── only brand is required, default provider to ChatGPT ───────────────
+  const brand    = req.query.brand;
+   if (!brand) {
+    return res.status(400).send('brand parameter is required');
+  }
+  const provider = req.query.provider || 'chatgpt';
+  const { disp: brandDisp, key: brandKey, compact } = brandVariants(brand);
+
+  // Dropdown dates
+  const rowsDates = await db.all(
+    `SELECT DISTINCT run_at
+       FROM metrics
+       WHERE provider = ?
+        AND (brand = ? OR brand = ?)
+      ORDER BY run_at DESC`,
+    [provider, brandDisp, compact]
+  );
+  const dates = rowsDates.map(r => r.run_at);
+// use ?date= if passed, otherwise latest for this brand
+   const date  = req.query.date || dates[0];
+
+// only brand is required in URL
+//  const brand    = req.query.brand;
+//  if (!brand) {
+//    return res.status(400).send('brand parameter is required');
+//  }
+// default to ChatGPT
+//  const provider = 'chatgpt';
+// pick the very latest run_at from our dropdown list
+//  const date     = dates[0];
+  
+// dynamically include the URL brand + its competitors
+  const selectedBrands = [
+  brandDisp,
+  ...((CONFIG.competitors[brandKey] || [])
+      .map(k => (CONFIG.brandDisplayNames && CONFIG.brandDisplayNames[k]) || k))
+];
+
+  // Summary metrics
+  const [{ lastRun }] = await db.all(
+    `SELECT MAX(run_at) AS lastRun FROM metrics WHERE provider = ?`,
+    provider
+  );
+  const [{ totalKeywords }] = await db.all(
+    `SELECT COUNT(DISTINCT keyword) AS totalKeywords
+       FROM metrics
+      WHERE provider = ? AND run_at = ? AND question = 'Keyword Performance'`,
+    provider, date
+  );
+  const [{ totalQuestions }] = await db.all(
+    `SELECT COUNT(DISTINCT question) AS totalQuestions
+       FROM metrics
+      WHERE provider = ? AND run_at = ? AND question != 'Keyword Performance'`,
+    provider, date
+  );
+  const rawMSV = await db.all(
+    `SELECT raw_answer FROM raw_responses
+      WHERE provider = ? AND run_at = ? AND question = 'MSV'`,
+    provider, date
+  );
+  const totalMSV = rawMSV.reduce(
+    (sum, { raw_answer }) => sum + (parseInt(raw_answer.replace(/\D/g, ''), 10) || 0),
+    0
+  );
+  const [{ totalExecutions }] = await db.all(
+    `SELECT COUNT(DISTINCT run_at) AS totalExecutions FROM metrics WHERE brand = ? OR brand = ?`,
+    brandDisp, compact
+  );
+  await db.close();
+//  const CONFIG = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+  const locationForUi = CONFIG.location || 'Canada';
+  res.render('dashboard', {
+    providers: PROVIDERS,
+    dates,
+	location: locationForUi,
+    selected: { provider, date, lastRun, brand },
+    summary: {
+      domain:      CONFIG.domains[brandKey] || '',
+      competitors: (CONFIG.competitors[brandKey] || [])
+               .map(k => (CONFIG.brandDisplayNames && CONFIG.brandDisplayNames[k]) || k),
+      platform:    provider==='chatgpt'
+                   ? `ChatGPT (${MODEL}) ✓`
+                   : provider==='gemini'
+                   ? `Gemini (${process.env.GEMINI_MODEL}) ✓`
+                   : `Perplexity (${PERPLEXITY_MODEL}) ✓`,
+      lastExecuted: new Date(lastRun).toLocaleString('en-US'),
+      totalExecutions,
+      totalKeywords,
+      totalQuestions,
+      totalMSV
+    },
+    model: MODEL,
+    brands: selectedBrands
+  });
+});
+
+// ------------------------------------------------------------
+// STEP 1: Input form
+ app.get('/input', (req, res) => {
+   res.render('input');
+ });
+
+// STEP 2: Handle form submission, call ChatGPT for MSV & prompts
+app.post('/input', async (req, res) => {
+  const { keywords, brand, brandUrl, competitors, competitorUrls, location } = req.body;
+	if (!location || !location.trim()) {
+	return res.status(400).send('Location is required');
+	}
+  const LOCATION = location.trim();
+  // split and trim inputs
+  const kwList    = keywords.split(',').map(s => s.trim()).filter(Boolean);
+  const compNames = competitors.split(',').map(s => s.trim());
+  const compUrls  = competitorUrls.split(',').map(s => s.trim());
+
+  // fetch MSV & prompts for each keyword
+  const tasks = [];
+  for (let kw of kwList) {
+    // 1) MSV — force integer‑only response
+    const msvTxt = await askLLM(
+      'chatgpt',
+      `You are an SEO researcher. Give me ONLY the monthly search volume as an integer (no text) for the term "${kw}" in ${LOCATION}.`,
+      kw
+    );
+    console.log(`MSV RAW for "${kw}":`, msvTxt);
+    const msv = Number(msvTxt.replace(/[^\d]/g, '')) || 0;
+
+    // 2) Prompts — force JSON array of exactly 10 entries
+    const promptsTxt = await askLLM(
+      'chatgpt',
+      `You are an expert in generating user questions. For the keyword "${kw}", considering the user is located in ${LOCATION} and tailor any region-specific context accordingly (regulations, vendors, prices, date formats, currency), provide EXACTLY 10 user-style questions. **Respond with EXACTLY one valid JSON array of strings and NOTHING ELSE**—no markdown, no explanation.`,
+      kw
+    );
+    console.log(`PROMPTS RAW for "${kw}":`, promptsTxt);
+
+    let prompts = [];
+    try {
+      const parsed = JSON.parse(promptsTxt);
+      if (Array.isArray(parsed)) prompts = parsed;
+    } catch (e) {
+      console.warn(`Failed to parse prompts for "${kw}":`, e);
+    }
+    // ensure we have exactly 10 prompts
+    while (prompts.length < 10) prompts.push('(no response)');
+    prompts = prompts.slice(0, 10);
+
+    tasks.push({ keyword: kw, msv, prompts });
+  }
+
+  // save in memory under a runId
+  const runId = Date.now().toString();
+  inputStore[runId] = {
+    brand,
+    brandUrl,
+	location: LOCATION,
+    competitors: compNames,
+    competitorUrls: compUrls,
+    tasks
+  };
+  // redirect to selection step
+  res.redirect(`/select?runId=${runId}`);
+});
+
+// STEP 3: Show selection page
+ app.get('/select', (req, res) => {
+   const runId = req.query.runId;
+   if (!runId || !inputStore[runId]) {
+     return res.status(400).send('Invalid runId');
+   }
+   res.render('select', { runId, data: inputStore[runId] });
+ });
+
+// STEP 4: Build final llminput.txt
+app.post('/select', (req, res) => {
+  const runId = req.query.runId;
+  const data  = inputStore[runId];
+  if (!data) return res.status(400).send('Invalid runId');
+
+  const selections = req.body.selected || {};
+  const lines = [];
+
+  data.tasks.forEach(({ keyword, msv }) => {
+// 1) Keyword row with literal "[Keyword]"
+    lines.push(`[Keyword] - ${keyword} - ${msv}`);
+// 2) Each of the 4 selected questions
+    (selections[keyword] || []).forEach(q => lines.push(`[${q}]`));
+    lines.push(''); // blank line between keywords
+  });
+
+// 3) output filename: lowercase brand + "-input.txt"
+  const outFile = `${slugLower(data.brand)}-input.txt`;
+  const outPath = path.join(
+    __dirname,
+    '../AI Chatbot Reporting',
+    outFile
+  );
+
+  fs.writeFileSync(outPath, lines.join('\n'), 'utf-8');
+  
+// ── merge new brand + competitors into config.json ────────────────
+  const cfgPath = path.join(__dirname, '../AI Chatbot Reporting/config.json');
+
+// Resolve normalized keys and remember display names
+// (requires resolveBrandKey() helper added near the top of server.js)
+  const brandKey = resolveBrandKey(data.brand);
+
+// Initialize the display-name map if missing
+CONFIG.brandDisplayNames = CONFIG.brandDisplayNames || {};
+CONFIG.brandDisplayNames[brandKey] = data.brand;
+
+// Normalize competitors into keys and remember their display names
+  const compKeys = data.competitors.map(c => {
+  const k = resolveBrandKey(c);
+  CONFIG.brandDisplayNames[k] = c;
+  return k;
+});
+
+
+// ensure main brand is listed
+  if (!CONFIG.brands.includes(data.brand)) {
+    CONFIG.brands.push(data.brand);
+  }
+// set its domain & input‑file name
+  CONFIG.domains[data.brand]    = data.brandUrl;
+  CONFIG.inputFiles[data.brand] = outFile;
+  // map its competitors
+  CONFIG.competitors[data.brand] = data.competitors;
+
+// persist the last used location for downstream scripts
+  CONFIG.location = data.location || CONFIG.location || 'Canada';
+
+// also back‑link each competitor:
+  data.competitors.forEach((comp, i) => {
+
+// add competitor to brands list if new
+    if (!CONFIG.brands.includes(comp)) {
+      CONFIG.brands.push(comp);
+    }
+// set that competitor’s domain & default input‑file name
+    CONFIG.domains[comp]    = data.competitorUrls[i];
+    CONFIG.inputFiles[comp] = `${comp.toLowerCase()}-input.txt`;
+// ensure the competitor lists you as a competitor too
+    if (!Array.isArray(CONFIG.competitors[comp])) {
+      CONFIG.competitors[comp] = [data.brand];
+    } else if (!CONFIG.competitors[comp].includes(data.brand)) {
+      CONFIG.competitors[comp].push(data.brand);
+    }
+  });
+// write the updated config.json back to disk
+  fs.writeFileSync(cfgPath, JSON.stringify(CONFIG, null, 2), 'utf-8');
+
+// cleanup and confirm
+  delete inputStore[runId];
+  res.render('done', { filePath: outPath });
+});
+
+
+// Keywords & Prompts
+app.get('/api/metrics/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const brand = req.query.brand;
+  const db = await initDb();
+  const rows = await db.all(
+   `SELECT keyword, question, brand, mentions, rank, sov, sentiment
+        FROM metrics
+       WHERE provider = ?
+         AND run_at = ?
+         AND question != 'Keyword Performance'
+         AND brand = ?
+       ORDER BY keyword, question`,
+     (brand ? [provider, date, brand] : [provider, date])
+  );
+  res.json(rows);
+  await db.close();
+});
+
+// Total Mentions
+app.get('/api/total-mentions/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const db = await initDb();
+  const rows = await db.all(
+    `SELECT brand, SUM(mentions) AS value
+       FROM metrics
+      WHERE provider = ?
+        AND run_at   = ?
+      GROUP BY brand`,
+    [provider, date]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+// Average Rank
+app.get('/api/average-rank/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const db = await initDb();
+  const rows = await db.all(
+     `SELECT brand, AVG(rank) AS value
+        FROM metrics
+       WHERE provider = ?
+         AND run_at = ?
+         AND question != 'Keyword Performance'
+       GROUP BY brand`,
+     [provider, date]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+// Average SOV
+app.get('/api/average-sov/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const db = await initDb();
+  const rows = await db.all(
+     `SELECT brand, AVG(sov) AS value
+        FROM metrics
+       WHERE provider = ?
+         AND run_at = ?
+         AND question != 'Keyword Performance'
+       GROUP BY brand`,
+     [provider, date]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+
+// Average Sentiment (−100..+100)
+app.get('/api/average-sentiment/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  try {
+    const db = await initDb();
+    const rows = await db.all(
+      `SELECT brand, AVG(sentiment) AS value
+         FROM metrics
+        WHERE provider = ?
+          AND run_at = ?
+          AND question != 'Keyword Performance'
+        GROUP BY brand`,
+      [provider, date]
+    );
+    res.json(rows);
+    await db.close();
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to load average sentiment' });
+  }
+});
+
+
+// Citations (from metrics links)
+app.get('/api/citations-by-brand/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const db = await initDb();
+  const rows = await db.all(
+     `SELECT brand, COUNT(*) AS value
+        FROM metrics
+       WHERE provider = ?
+         AND run_at = ?
+         AND links != ''
+       GROUP BY brand`,
+     [provider, date]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+// Ranking Opportunities
+app.get('/api/questions-lower/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const brand = req.query.brand;
+  if (!brand) return res.status(400).send('brand parameter is required');
+  const { disp, compact } = brandVariants(brand);
+  const db = await initDb();
+  const rows = await db.all(
+    `SELECT m1.keyword,
+            m1.question,
+            (
+              SELECT m2.brand
+                FROM metrics m2
+               WHERE m2.provider = m1.provider
+                 AND m2.run_at   = m1.run_at
+                 AND m2.question = m1.question
+                 AND m2.brand    != m1.brand
+                 AND m2.rank     < m1.rank
+               ORDER BY m2.rank
+               LIMIT 1
+            ) AS topCompetitor
+       FROM metrics m1
+      WHERE m1.provider = ?
+        AND m1.run_at   = ?
+        AND (m1.brand = ? OR m1.brand = ?)
+        AND m1.rank     < 10
+        -- require at least one competitor outranks you
+        AND EXISTS (
+          SELECT 1 FROM metrics m2
+           WHERE m2.provider = m1.provider
+             AND m2.run_at   = m1.run_at
+             AND m2.question = m1.question
+             AND m2.brand    != m1.brand
+             AND m2.rank     < m1.rank
+        )
+        AND m1.question != 'Keyword Performance'`,
+    [provider, date, disp, compact]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+// Mention Opportunities
+app.get('/api/questions-zero-mentions/:provider', async (req, res) => {
+  const { provider } = req.params;
+  const date = req.query.date;
+  const brand = req.query.brand;
+  if (!brand) return res.status(400).send('brand parameter is required');
+  const { disp, compact } = brandVariants(brand);
+  const db = await initDb();
+  const rows = await db.all(
+    `SELECT m1.keyword, m1.question,
+            GROUP_CONCAT(m2.brand) AS competitors
+       FROM metrics m1
+  JOIN metrics AS m2
+         ON m2.provider = m1.provider
+        AND m2.run_at   = m1.run_at
+        AND m2.keyword  = m1.keyword
+        AND m2.question = m1.question
+        AND m2.mentions > 0
+        AND m2.brand   != ? AND m2.brand != ?
+      WHERE m1.provider = ? AND m1.run_at = ?
+        AND (m1.brand = ? OR m1.brand = ?)
+        AND m1.mentions = 0
+        AND m1.question != 'Keyword Performance'
+      GROUP BY m1.keyword, m1.question`,
+    [disp, compact, provider, date, disp, compact]
+  );
+  res.json(rows);
+  await db.close();
+});
+
+
+// GET /api/opportunities?brand=Tim%20Hortons&provider=chatgpt&runDate=latest&type=all
+app.get('/api/opportunities', async (req, res) => {
+  const brand    = req.query.brand || '';
+  const provider = req.query.provider || 'chatgpt';
+  let runDate    = req.query.runDate || 'latest';
+  const type     = (req.query.type || 'all').toLowerCase(); // 'all' | 'ranking' | 'mention'
+
+  if (!brand) return res.status(400).json({ error: 'brand is required' });
+
+  try {
+    // 1) Find latest runDate (if requested)
+    const dbMain = await open({ filename: DB_PATH, driver: sqlite3.Database });
+    if (runDate === 'latest') {
+      const r = await dbMain.get(
+        `SELECT run_at AS runDate
+           FROM metrics
+          WHERE provider = ?
+            AND (brand = ? OR brand = ?)
+          ORDER BY run_at DESC
+          LIMIT 1`,
+        [provider, brand, brand.replace(/[^A-Za-z0-9]+/g,'')]
+      );
+      runDate = r?.runDate || null;
+    }
+    await dbMain.close();
+
+    if (!runDate) return res.json({ rows: [], runDate: null });
+
+    // 2) Read from opportunities.db
+    const dbOpp = await getOppDb();
+    const where = ['brand = ?', 'provider = ?', 'run_date = ?'];
+    const params = [brand, provider, runDate];
+
+    if (type === 'ranking') {
+      where.push(`opportunity_type = 'Ranking'`);
+    } else if (type === 'mention') {
+      where.push(`opportunity_type = 'Mention'`);
+    }
+
+    const rows = await dbOpp.all(
+      `SELECT prompt AS Prompt,
+              opportunity_type AS OpportunityType,
+              content_update_type AS ContentUpdateType,
+              suggested_brand_url AS SuggestedExistingUrl,
+              example_competitor_url AS ExampleCompetitorUrl,
+              keyword AS Keyword,
+              msv AS MSV,
+              provider AS Provider,
+              run_date AS RunDate
+         FROM opportunity_insights
+        WHERE ${where.join(' AND ')}
+        ORDER BY CASE OpportunityType WHEN 'Ranking' THEN 0 ELSE 1 END,
+                 COALESCE(MSV, 0) DESC,
+                 Prompt ASC`,
+      params
+    );
+
+    await dbOpp.close();
+    res.json({ rows, runDate });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch opportunities' });
+  }
+});
+
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Dashboard up: http://localhost:${PORT}`));

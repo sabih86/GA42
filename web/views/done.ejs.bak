@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Done</title>
+  <style> body { font-family: sans-serif; padding: 2rem; } </style>
+</head>
+<body>
+  <h1>Input File Created</h1>
+  <p>Your new input file has been saved as:</p>
+  <pre><%= filePath %></pre>
+  <p>You can now run: <code>node llmreportv7.js</code></p>
+</body>
+</html>

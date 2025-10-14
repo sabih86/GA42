@@ -63,7 +63,10 @@
     "Starbucks": "starbucks-input.txt",
     "Burger King": "burger king-input.txt",
     "McDonalds": "mcdonalds-input.txt",
-    "Second Cup": "second cup-input.txt"
+    "Second Cup": "second cup-input.txt",
+    "JD Web Services": "jdwebservices-input.txt",
+    "Khalsa Website Designers": "khalsa website designers-input.txt",
+    "Digiengland": "digiengland-input.txt"
   },
   "brands": [
     "TD",
@@ -140,7 +143,10 @@
     "Starbucks",
     "Burger King",
     "McDonalds",
-    "Second Cup"
+    "Second Cup",
+    "JD Web Services",
+    "Khalsa Website Designers",
+    "Digiengland"
   ],
   "domains": {
     "TD": "td.com",
@@ -217,7 +223,10 @@
     "Starbucks": "starbucks.ca",
     "Burger King": "bk.com",
     "McDonalds": "mcdonalds.com",
-    "Second Cup": "secondcup.com"
+    "Second Cup": "secondcup.com",
+    "JD Web Services": "https://jdwebservices.com/",
+    "Khalsa Website Designers": "https://www.khalsa-website-designers.net/",
+    "Digiengland": "https://digiengland.in/"
   },
   "competitors": {
     "TD": [
@@ -453,6 +462,16 @@
     ],
     "Second Cup": [
       "Tim Hortons"
+    ],
+    "JD Web Services": [
+      "Khalsa Website Designers",
+      "Digiengland"
+    ],
+    "Khalsa Website Designers": [
+      "JD Web Services"
+    ],
+    "Digiengland": [
+      "JD Web Services"
     ]
   },
   "ctr": {
@@ -468,7 +487,10 @@
     "Starbucks": "Starbucks",
     "BurgerKing": "Burger King",
     "Mcdonalds": "McDonalds",
-    "SecondCup": "Second Cup"
+    "SecondCup": "Second Cup",
+    "JdWebServices": "JD Web Services",
+    "KhalsaWebsiteDesigners": "Khalsa Website Designers",
+    "Digiengland": "Digiengland"
   },
-  "location": "toronto"
+  "location": "Punjab, India"
 }

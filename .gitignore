@@ -1,0 +1,85 @@
+# =====================================================
+# Node.js / Express / EJS Project .gitignore
+# =====================================================
+
+# --- Node dependencies ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- Environment variables ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Logs ---
+logs
+*.log
+log/
+debug.log
+error.log
+*.pid
+*.seed
+*.pid.lock
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Build / runtime artifacts ---
+dist/
+build/
+tmp/
+temp/
+.cache/
+coverage/
+.nyc_output/
+.next/
+out/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Uploads / user data ---
+uploads/
+public/uploads/
+storage/
+*.bak
+*.old
+*.orig
+
+# --- Optional tools / frameworks ---
+# TypeScript
+*.tsbuildinfo
+
+# PM2 logs
+pids/
+pmm.json
+ecosystem.config.js
+
+# --- Misc ---
+# Ignore generated reports or JSON exports
+*.report.json
+*.coverage
+*.sqlite
+*.db
+*.log.*
+
+# --- Ignore temporary EJS caches ---
+*.ejs~
+*.ejs.tmp
+
+# --- Local development settings ---
+.envrc
+.vscode/
+*.local

@@ -7,10 +7,10 @@ import { open } from 'sqlite';
 import OpenAI  from 'openai';
 import dotenv from 'dotenv';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
+dotenv.config({ path: path.join(__dirname, '.env') });
 // resolve the Reporting folder (…\GA4\AI Chatbot Reporting)
 const DB_DIR = path.resolve(__dirname, '../AI Chatbot Reporting');
 
@@ -579,6 +579,31 @@ app.get('/api/questions-zero-mentions/:provider', async (req, res) => {
   );
   res.json(rows);
   await db.close();
+});
+
+// ------------------------------------------------------------
+// AUTH ROUTES (Login & Signup)
+// ------------------------------------------------------------
+app.get("/login", (req, res) => {
+  res.render("login"); // views/login.ejs
+});
+
+app.post("/login", (req, res) => {
+  // Temporary: log input and redirect
+  const { email, password } = req.body;
+  console.log("Login:", email, password);
+  res.redirect("/dashboard"); // redirect to dashboard after login
+});
+
+app.get("/signup", (req, res) => {
+  res.render("signup"); // views/signup.ejs
+});
+
+app.post("/signup", (req, res) => {
+  // Temporary: log data and redirect
+  const { name, email, password } = req.body;
+  console.log("Signup:", name, email);
+  res.redirect("/login"); // go to login after signup
 });
 
 

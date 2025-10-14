@@ -6,7 +6,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import OpenAI  from 'openai';
 import dotenv from 'dotenv';
-const { job } = require('./cron');
+import { job } from './cron.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);

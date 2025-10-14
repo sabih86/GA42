@@ -6,6 +6,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import OpenAI  from 'openai';
 import dotenv from 'dotenv';
+const { job } = require('./cron');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -16,7 +17,7 @@ const DB_DIR = path.resolve(__dirname, '../AI Chatbot Reporting');
 
 // main & opp DBs live inside that folder's /output
 const DB_PATH = path.join(DB_DIR, 'output', 'llmreport.db');   // already used by initDb()
-
+job.start(); 
 
 
 // load the .env that lives next door in AI Chatbot Reporting

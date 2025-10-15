@@ -2,257 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LLMReport Input</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --primary: #3B82F6;
-      --primary-dark: #2563EB;
-      --gray-50: #F8FAFC;
-      --gray-100: #F1F5F9;
-      --gray-200: #E2E8F0;
-      --gray-300: #CBD5E1;
-      --gray-600: #475569;
-      --gray-700: #334155;
-      --gray-900: #0F172A;
-      --white: #FFFFFF;
-      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --radius: 8px;
-      --radius-lg: 12px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
-
-    .container {
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      padding: 3rem;
-      width: 100%;
-      max-width: 700px;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--gray-900);
-      margin-bottom: 0.5rem;
-    }
-
-    .header p {
-      color: var(--gray-600);
-      font-size: 1rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      color: var(--gray-700);
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--gray-300);
-      border-radius: var(--radius);
-      font-size: 1rem;
-      transition: all 0.2s ease;
-      background: var(--white);
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    .form-help {
-      font-size: 0.75rem;
-      color: var(--gray-600);
-      margin-top: 0.25rem;
-    }
-
-    .competitor-row {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 0.75rem;
-      align-items: center;
-    }
-
-    .competitor-row input {
-      flex: 1;
-    }
-
-    .remove-btn {
-      background: #EF4444;
-      color: white;
-      border: none;
-      border-radius: var(--radius);
-      padding: 0.5rem 0.75rem;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .remove-btn:hover {
-      background: #DC2626;
-    }
-
-    .add-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--radius);
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .add-btn:hover {
-      background: var(--primary-dark);
-    }
-
-    .submit-btn {
-      width: 100%;
-      background: var(--primary);
-      color: var(--white);
-      border: none;
-      border-radius: var(--radius);
-      padding: 0.875rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-
-    .submit-btn:hover {
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow);
-    }
-
-    @media (max-width: 640px) {
-      .competitor-row {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-    }
+    body { font-family: sans-serif; padding: 2rem; }
+    label { display: block; margin-bottom: 1rem; }
+    input, textarea { width: 100%; padding: .5rem; margin-top: .5rem; }
+    button { padding: .5rem 1rem; font-size: 1rem; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>LLMReport Setup</h1>
-      <p>Configure your brand analysis parameters</p>
+  <h1>LLMReport Input</h1>
+  <form action="/input" method="POST">
+    <label>Keywords (comma-separated):
+      <textarea name="keywords" rows="3" required></textarea>
+    </label>
+    <label>Brand Name:
+      <input type="text" name="brand" required />
+    </label>
+    <label>Brand URL:
+      <input type="url" name="brandUrl" required />
+    </label>
+	<label>Location (e.g., Canada or Toronto) — required:
+      <input type="text" name="location" required />
+    </label>
+        <h2>Competitors</h2>
+    <div id="competitors" style="margin-bottom:1rem;">
+      <div class="competitor-row" data-index="0" style="margin-bottom: .75rem; border: 1px solid #eee; padding: .75rem; border-radius: .5rem;">
+        <label style="margin-bottom: .5rem;">
+          Competitor name
+          <input type="text" name="competitors[0][name]" required />
+        </label>
+        <label>
+          Competitor URL
+          <input type="url" name="competitors[0][url]" required />
+        </label>
+      </div>
     </div>
-
-    <form action="/input" method="POST">
-      <div class="form-group">
-        <label for="keywords">Keywords</label>
-        <textarea name="keywords" id="keywords" rows="3" required placeholder="web development, digital marketing, SEO services"></textarea>
-        <div class="form-help">Enter keywords separated by commas</div>
-      </div>
-
-      <div class="form-group">
-        <label for="brand">Brand Name</label>
-        <input type="text" name="brand" id="brand" required placeholder="Your Company Name" />
-      </div>
-
-      <div class="form-group">
-        <label for="brandUrl">Brand URL</label>
-        <input type="url" name="brandUrl" id="brandUrl" required placeholder="https://yourcompany.com" />
-      </div>
-
-      <div class="form-group">
-        <label for="location">Location</label>
-        <input type="text" name="location" id="location" required placeholder="Toronto, Canada" />
-        <div class="form-help">Specify your target geographic location</div>
-      </div>
-
-      <!-- Competitor Inputs -->
-      <div class="form-group">
-        <label>Competitors</label>
-        <div id="competitors-container">
-          <div class="competitor-row">
-            <input type="text" name="competitors[]" placeholder="Competitor Name" required />
-            <input type="url" name="competitorUrls[]" placeholder="https://competitor.com" required />
-            <button type="button" class="remove-btn"><i class="fas fa-trash"></i></button>
-          </div>
-        </div>
-        <button type="button" class="add-btn" id="add-competitor"><i class="fas fa-plus"></i> Add Competitor</button>
-        <div class="form-help">Add as many competitors as you like</div>
-      </div>
-
-      <button type="submit" class="submit-btn">
-        <i class="fas fa-arrow-right"></i>
-        Continue to Question Selection
-      </button>
-    </form>
-  </div>
-
+    <button type="button" id="addCompetitor" aria-label="Add another competitor" style="margin-bottom:1rem;">+ Add competitor</button>
+    <button type="submit">Next</button>
+  </form>
   <script>
-    const addBtn = document.getElementById('add-competitor');
-    const container = document.getElementById('competitors-container');
+    (function () {
+      const container = document.getElementById('competitors');
+      const addBtn = document.getElementById('addCompetitor');
+      let idx = 1;
 
-    addBtn.addEventListener('click', () => {
-      const row = document.createElement('div');
-      row.classList.add('competitor-row');
-      row.innerHTML = `
-        <input type="text" name="competitors[]" placeholder="Competitor Name" required />
-        <input type="url" name="competitorUrls[]" placeholder="https://competitor.com" required />
-        <button type="button" class="remove-btn"><i class="fas fa-trash"></i></button>
-      `;
-      container.appendChild(row);
-    });
+      addBtn.addEventListener('click', () => {
+        const row = document.createElement('div');
+        row.className = 'competitor-row';
+        row.dataset.index = String(idx);
+        row.style.marginBottom = '.75rem';
+        row.style.border = '1px solid #eee';
+        row.style.padding = '.75rem';
+        row.style.borderRadius = '.5rem';
 
-    container.addEventListener('click', (e) => {
-      if (e.target.closest('.remove-btn')) {
-        e.target.closest('.competitor-row').remove();
-      }
-    });
+        row.innerHTML = `
+          <div style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+            <label style="flex:1; min-width:240px;">
+              Competitor name
+              <input type="text" name="competitors[${idx}][name]" required />
+            </label>
+            <label style="flex:1; min-width:280px;">
+              Competitor URL
+              <input type="url" name="competitors[${idx}][url]" required />
+            </label>
+            <button type="button" class="remove-competitor" title="Remove this competitor" aria-label="Remove competitor" style="height:2.5rem;">× Remove</button>
+          </div>
+        `;
+
+        row.querySelector('.remove-competitor').addEventListener('click', () => {
+          container.removeChild(row);
+        });
+
+        container.appendChild(row);
+        idx++;
+      });
+    })();
   </script>
 </body>
 </html>

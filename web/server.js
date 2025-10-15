@@ -6,18 +6,17 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import OpenAI  from 'openai';
 import dotenv from 'dotenv';
-import { job } from './cron.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '.env') });
 // resolve the Reporting folder (…\GA4\AI Chatbot Reporting)
 const DB_DIR = path.resolve(__dirname, '../AI Chatbot Reporting');
 
 // main & opp DBs live inside that folder's /output
 const DB_PATH = path.join(DB_DIR, 'output', 'llmreport.db');   // already used by initDb()
-job.start(); 
+
 
 
 // load the .env that lives next door in AI Chatbot Reporting
@@ -241,15 +240,37 @@ app.get('/', async (req, res) => {
 
 // STEP 2: Handle form submission, call ChatGPT for MSV & prompts
 app.post('/input', async (req, res) => {
-  const { keywords, brand, brandUrl, competitors, competitorUrls, location } = req.body;
-	if (!location || !location.trim()) {
-	return res.status(400).send('Location is required');
-	}
+  const { keywords, brand, brandUrl, location } = req.body;
+  const competitorsInput = req.body.competitors; // array of { name, url } from input.ejs
+
+  if (!location || !location.trim()) {
+    return res.status(400).send('Location is required');
+  }
   const LOCATION = location.trim();
+
   // split and trim inputs
-  const kwList    = keywords.split(',').map(s => s.trim()).filter(Boolean);
-  const compNames = competitors.split(',').map(s => s.trim());
-  const compUrls  = competitorUrls.split(',').map(s => s.trim());
+  const kwList = String(keywords || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  // Normalize competitors: expect array of { name, url }
+  // (express.urlencoded({ extended: true }) is already enabled, so nested fields parse fine)
+  const compList = Array.isArray(competitorsInput)
+    ? competitorsInput
+    : competitorsInput
+      ? Object.values(competitorsInput)
+      : [];
+
+  const cleanedCompetitors = compList
+    .map(c => ({
+      name: (c?.name || '').trim(),
+      url: (c?.url || '').trim(),
+    }))
+    .filter(c => c.name && c.url);
+
+  const compNames = cleanedCompetitors.map(c => c.name);
+  const compUrls  = cleanedCompetitors.map(c => c.url);
 
   // fetch MSV & prompts for each keyword
   const tasks = [];
@@ -580,31 +601,6 @@ app.get('/api/questions-zero-mentions/:provider', async (req, res) => {
   );
   res.json(rows);
   await db.close();
-});
-
-// ------------------------------------------------------------
-// AUTH ROUTES (Login & Signup)
-// ------------------------------------------------------------
-app.get("/login", (req, res) => {
-  res.render("login"); // views/login.ejs
-});
-
-app.post("/login", (req, res) => {
-  // Temporary: log input and redirect
-  const { email, password } = req.body;
-  console.log("Login:", email, password);
-  res.redirect("/dashboard"); // redirect to dashboard after login
-});
-
-app.get("/signup", (req, res) => {
-  res.render("signup"); // views/signup.ejs
-});
-
-app.post("/signup", (req, res) => {
-  // Temporary: log data and redirect
-  const { name, email, password } = req.body;
-  console.log("Signup:", name, email);
-  res.redirect("/login"); // go to login after signup
 });
 
 

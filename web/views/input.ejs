@@ -1,81 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <title>LLMReport Input</title>
-  <style>
-    body { font-family: sans-serif; padding: 2rem; }
-    label { display: block; margin-bottom: 1rem; }
-    input, textarea { width: 100%; padding: .5rem; margin-top: .5rem; }
-    button { padding: .5rem 1rem; font-size: 1rem; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
 </head>
 <body>
-  <h1>LLMReport Input</h1>
-  <form action="/input" method="POST">
-    <label>Keywords (comma-separated):
-      <textarea name="keywords" rows="3" required></textarea>
-    </label>
-    <label>Brand Name:
-      <input type="text" name="brand" required />
-    </label>
-    <label>Brand URL:
-      <input type="url" name="brandUrl" required />
-    </label>
-	<label>Location (e.g., Canada or Toronto) — required:
-      <input type="text" name="location" required />
-    </label>
-        <h2>Competitors</h2>
-    <div id="competitors" style="margin-bottom:1rem;">
-      <div class="competitor-row" data-index="0" style="margin-bottom: .75rem; border: 1px solid #eee; padding: .75rem; border-radius: .5rem;">
-        <label style="margin-bottom: .5rem;">
-          Competitor name
-          <input type="text" name="competitors[0][name]" required />
-        </label>
-        <label>
-          Competitor URL
-          <input type="url" name="competitors[0][url]" required />
-        </label>
-      </div>
-    </div>
-    <button type="button" id="addCompetitor" aria-label="Add another competitor" style="margin-bottom:1rem;">+ Add competitor</button>
-    <button type="submit">Next</button>
-  </form>
-  <script>
-    (function () {
-      const container = document.getElementById('competitors');
-      const addBtn = document.getElementById('addCompetitor');
-      let idx = 1;
+  <div class="wrapper" role="main">
+    <header>
+      <h1>LLMReport Setup</h1>
+      <p>Configure brand & competitor details to generate a report.</p>
+    </header>
 
-      addBtn.addEventListener('click', () => {
+    <form id="inputForm" action="/input" method="POST" novalidate>
+      <div class="grid">
+        <div class="full">
+          <label class="field">Keywords (comma-separated)
+            <textarea name="keywords" required placeholder="e.g. web development, seo, digital marketing"></textarea>
+          </label>
+          <div class="label-help">Enter keywords separated by commas.</div>
+        </div>
+
+        <div>
+          <label class="field">Brand Name
+            <input type="text" name="brand" required placeholder="Your Company Name" />
+          </label>
+        </div>
+
+        <div>
+          <label class="field">Brand URL
+            <input type="url" name="brandUrl" required placeholder="https://yourcompany.com" />
+          </label>
+        </div>
+
+        <div class="full">
+          <label class="field">Location (e.g., Toronto, Canada)
+            <input type="text" name="location" required placeholder="City, Country or Country" />
+          </label>
+          <div class="label-help">Specify your target geographic location.</div>
+        </div>
+
+        <div class="full">
+          <h2 style="margin:0 0 .5rem 0; font-size:1rem; display:flex; align-items:center; gap:.5rem;">
+            <i class="fa-solid fa-user-friends" style="color:var(--accent)"></i>
+            Competitors
+            <span id="competitorCount" class="count-pill" aria-live="polite" style="margin-left: .5rem;">1</span>
+          </h2>
+
+          <div class="label-help" style="margin-bottom:.5rem;">Add competitor name and URL. At least one competitor is required.</div>
+
+          <!-- container for dynamic rows -->
+          <div id="competitors" class="competitors" aria-live="polite">
+            <div class="competitor-row" data-index="0">
+              <div class="col">
+                <label class="field">Competitor name
+                  <input type="text" name="competitors[0][name]" required placeholder="Competitor name" />
+                </label>
+              </div>
+              <div class="col">
+                <label class="field">Competitor URL
+                  <input type="url" name="competitors[0][url]" required placeholder="https://competitor.example" />
+                </label>
+              </div>
+              <div class="row-actions" aria-hidden="true">
+                <!-- remove button hidden for first row -->
+                <button type="button" class="btn ghost remove-competitor" title="Remove competitor" disabled aria-disabled="true">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="meta">
+            <div>
+              <button type="button" id="addBtn" class="btn ghost" aria-label="Add competitor">
+                <i class="fa-solid fa-plus"></i> Add competitor
+              </button>
+            </div>
+
+            <div style="color:var(--muted); font-size:0.9rem;">
+              <strong id="maxInfo">Max 10 competitors</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backward compatibility: hidden CSV fields for legacy server expecting comma separated strings -->
+      <input type="hidden" name="competitors" id="competitorsHidden" value="">
+      <input type="hidden" name="competitorUrls" id="competitorUrlsHidden" value="">
+
+      <footer>
+        <button type="button" class="btn ghost" onclick="window.history.back();">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+        <button type="submit" class="btn primary">
+          Next <i class="fa-solid fa-arrow-right" style="margin-left:.35rem;"></i>
+        </button>
+      </footer>
+    </form>
+  </div>
+
+  <script>
+    (function(){
+      // Configuration
+      const MAX_COMPETITORS = 10;
+
+      // Elements
+      const container = document.getElementById('competitors');
+      const addBtn = document.getElementById('addBtn');
+      const countPill = document.getElementById('competitorCount');
+      const form = document.getElementById('inputForm');
+      const hiddenNames = document.getElementById('competitorsHidden');
+      const hiddenUrls = document.getElementById('competitorUrlsHidden');
+      let idx = 1; // next index to use (0 is initial)
+
+      // helper to update UI state
+      function updateState(){
+        const rows = container.querySelectorAll('.competitor-row');
+        countPill.textContent = String(rows.length);
+        // enable/disable add button
+        addBtn.disabled = rows.length >= MAX_COMPETITORS;
+        addBtn.classList.toggle('ghost', !addBtn.disabled);
+        // enable remove buttons (but prevent removing all)
+        rows.forEach((row, i) => {
+          const btn = row.querySelector('.remove-competitor');
+          if(!btn) return;
+          if(rows.length === 1){
+            btn.disabled = true;
+            btn.setAttribute('aria-disabled','true');
+            btn.classList.add('ghost');
+            btn.classList.remove('danger');
+          } else {
+            btn.disabled = false;
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('ghost');
+            btn.classList.add('danger');
+          }
+        });
+        // update max text
+        document.getElementById('maxInfo').textContent = 'Max ' + MAX_COMPETITORS + ' competitors';
+      }
+
+      // create a row
+      function createRow(i, name = '', url = ''){
         const row = document.createElement('div');
         row.className = 'competitor-row';
-        row.dataset.index = String(idx);
-        row.style.marginBottom = '.75rem';
-        row.style.border = '1px solid #eee';
-        row.style.padding = '.75rem';
-        row.style.borderRadius = '.5rem';
-
+        row.dataset.index = String(i);
         row.innerHTML = `
-          <div style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
-            <label style="flex:1; min-width:240px;">
-              Competitor name
-              <input type="text" name="competitors[${idx}][name]" required />
+          <div class="col">
+            <label class="field">Competitor name
+              <input type="text" name="competitors[${i}][name]" required placeholder="Competitor name" value="${escapeHtml(name)}" />
             </label>
-            <label style="flex:1; min-width:280px;">
-              Competitor URL
-              <input type="url" name="competitors[${idx}][url]" required />
+          </div>
+          <div class="col">
+            <label class="field">Competitor URL
+              <input type="url" name="competitors[${i}][url]" required placeholder="https://competitor.example" value="${escapeHtml(url)}" />
             </label>
-            <button type="button" class="remove-competitor" title="Remove this competitor" aria-label="Remove competitor" style="height:2.5rem;">× Remove</button>
+          </div>
+          <div class="row-actions">
+            <button type="button" class="btn danger remove-competitor" title="Remove competitor" aria-label="Remove competitor">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
         `;
 
+        // attach remove handler
         row.querySelector('.remove-competitor').addEventListener('click', () => {
-          container.removeChild(row);
+          row.remove();
+          updateState();
         });
 
+        return row;
+      }
+
+      // simple HTML escape for values
+      function escapeHtml(s){
+        return String(s || '').replace(/[&<>"']/g, (m) => ({
+          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        })[m]);
+      }
+
+      // add row handler
+      addBtn.addEventListener('click', () => {
+        const rows = container.querySelectorAll('.competitor-row').length;
+        if(rows >= MAX_COMPETITORS) return;
+        const row = createRow(idx);
         container.appendChild(row);
         idx++;
+        updateState();
+        // focus first input in the new row
+        const input = row.querySelector('input[name^="competitors"]');
+        if(input) input.focus();
+      });
+
+      // ensure initial state
+      updateState();
+
+      // form submit: trim values, remove empty rows, populate hidden CSVs (back-compat)
+      form.addEventListener('submit', (e) => {
+        // client-side trimming + removal of completely empty rows
+        const rows = Array.from(container.querySelectorAll('.competitor-row'));
+        const names = [];
+        const urls = [];
+        for(const row of rows){
+          const nameInput = row.querySelector('input[name$="[name]"]');
+          const urlInput = row.querySelector('input[name$="[url]"]');
+          const name = nameInput ? nameInput.value.trim() : '';
+          const url  = urlInput  ? urlInput.value.trim()  : '';
+
+          if(!name && !url){
+            // remove empty rows from DOM before submit
+            row.remove();
+            continue;
+          }
+
+          // If one is present but other missing -> block submit and show message
+          if((name && !url) || (!name && url)){
+            e.preventDefault();
+            alert('Please ensure each competitor row has both a name and a URL, or remove the row.');
+            (nameInput || urlInput).focus();
+            return false;
+          }
+
+          names.push(name);
+          urls.push(url);
+        }
+
+        // If no competitors left, block submit
+        if(names.length === 0){
+          e.preventDefault();
+          alert('Please add at least one competitor.');
+          return false;
+        }
+
+        // populate hidden CSV fields for backward compatibility
+        hiddenNames.value = names.join(', ');
+        hiddenUrls.value = urls.join(', ');
+
+        // allow submit to continue
+        return true;
+      });
+
+      // Accessibility: allow Enter on add button
+      addBtn.addEventListener('keydown', (ev) => {
+        if(ev.key === 'Enter') {
+          ev.preventDefault();
+          addBtn.click();
+        }
       });
     })();
   </script>
